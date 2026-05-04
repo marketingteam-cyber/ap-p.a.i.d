@@ -1,19 +1,15 @@
-const Database = require('better-sqlite3');
-const path = require('path');
-const fs = require('fs');
+const { Pool } = require('pg');
 
-const DB_PATH = path.join(__dirname, '../../data/paid.db');
-const SCHEMA_PATH = path.join(__dirname, 'schema.sql');
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
+});
 
-const dataDir = path.dirname(DB_PATH);
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
-}
+pool.on('error', (err) => {
+  console.error('[DB] Unexpected pool error:', err.message);
+});
 
-const db = new Database(DB_PATH);
-db.pragma('journal_mode = WAL');
-
-const schema = fs.readFileSync(SCHEMA_PATH, 'utf8');
-db.exec(schema);
-
-module.exports = db;
+module.exports = pool;

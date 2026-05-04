@@ -2,18 +2,17 @@ require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 
 const express = require('express');
 const session = require('express-session');
+const pgSession = require('connect-pg-simple')(session);
 const cors = require('cors');
 const path = require('path');
-
-const { requireAuth } = require('./middleware/auth');
-const { startScheduler } = require('./scheduler/dailyRefresh');
+const db = require('./db/database');
 
 const authRouter = require('./routes/auth');
 const overviewRouter = require('./routes/overview');
 const myAdsRouter = require('./routes/myAds');
 const competitorsRouter = require('./routes/competitors');
 const creativesRouter = require('./routes/creatives');
-
+const { requireAuth } = require('./middleware/auth');
 const { runDailyRefresh } = require('./scheduler/dailyRefresh');
 
 const app = express();
@@ -30,6 +29,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(session({
+  store: new pgSession({
+    pool: db,
+    tableName: 'session',
+    createTableIfMissing: true,
+  }),
   secret: process.env.SESSION_SECRET || 'dev-secret-change-me',
   resave: false,
   saveUninitialized: false,
@@ -40,54 +44,60 @@ app.use(session({
   },
 }));
 
-// Auth routes (no auth required)
+// Auth routes (public)
 app.use('/api/auth', authRouter);
 
 // Protected API routes
-app.use('/api/overview', requireAuth, overviewRouter);
-app.use('/api/my-ads', requireAuth, myAdsRouter);
-app.use('/api/competitors', requireAuth, competitorsRouter);
-app.use('/api/creatives', requireAuth, creativesRouter);
+app.use('/api/overview',     requireAuth, overviewRouter);
+app.use('/api/my-ads',       requireAuth, myAdsRouter);
+app.use('/api/competitors',  requireAuth, competitorsRouter);
+app.use('/api/creatives',    requireAuth, creativesRouter);
 
-// Refresh status and trigger
-app.get('/api/refresh/status', requireAuth, (req, res) => {
+// Refresh status
+app.get('/api/refresh/status', requireAuth, async (req, res) => {
   try {
-    const db = require('./db/database');
-    const last = db.prepare('SELECT * FROM refresh_log ORDER BY created_at DESC LIMIT 1').get();
+    const { rows: [last] } = await db.query(
+      `SELECT * FROM refresh_log ORDER BY created_at DESC LIMIT 1`
+    );
     const now = new Date();
     const next = new Date();
     next.setUTCHours(2, 30, 0, 0);
     if (next <= now) next.setUTCDate(next.getUTCDate() + 1);
-
-    return res.json({
-      last_refresh: last,
-      next_refresh: next.toISOString(),
-    });
+    return res.json({ last_refresh: last, next_refresh: next.toISOString() });
   } catch (err) {
     return res.status(500).json({ error: 'Failed to get refresh status' });
   }
 });
 
-app.post('/api/refresh/trigger', requireAuth, async (req, res) => {
-  try {
-    res.json({ message: 'Refresh triggered', status: 'running' });
-    runDailyRefresh().catch(err => console.error('Manual refresh error:', err));
-  } catch (err) {
-    return res.status(500).json({ error: 'Failed to trigger refresh' });
-  }
+// Manual refresh trigger (auth required)
+app.post('/api/refresh/trigger', requireAuth, (req, res) => {
+  res.json({ message: 'Refresh triggered', status: 'running' });
+  runDailyRefresh().catch(err => console.error('Manual refresh error:', err));
 });
 
-// Serve frontend in production
-if (process.env.NODE_ENV === 'production') {
+// Cron trigger endpoint — called by Vercel Cron or external scheduler
+app.get('/api/refresh/cron', (req, res) => {
+  const secret = process.env.CRON_SECRET;
+  if (!secret || req.query.secret !== secret) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  res.json({ message: 'Cron refresh started' });
+  runDailyRefresh().catch(err => console.error('Cron refresh error:', err));
+});
+
+// Serve frontend in production (non-Vercel)
+if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
   app.use(express.static(path.join(__dirname, '../frontend/dist')));
   app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
   });
 }
 
-app.listen(PORT, () => {
-  console.log(`[P.A.I.D] Server running on port ${PORT}`);
-  startScheduler();
-});
+// Local dev only — Vercel handles serving in production
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`[P.A.I.D] Server running on port ${PORT}`);
+  });
+}
 
 module.exports = app;

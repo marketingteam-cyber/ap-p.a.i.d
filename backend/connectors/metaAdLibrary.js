@@ -46,7 +46,7 @@ async function fetchCompetitorAds(competitorName) {
         impressions_upper: ad.impressions?.upper_bound || null,
         spend_lower: ad.spend?.lower_bound || null,
         spend_upper: ad.spend?.upper_bound || null,
-        is_active: !ad.ad_delivery_stop_time ? 1 : 0,
+        is_active: !ad.ad_delivery_stop_time,
       };
     });
   } catch (err) {
