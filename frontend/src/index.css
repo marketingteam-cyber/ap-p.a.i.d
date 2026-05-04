@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --blue:      #1A4FBA;
+  --blue-dark: #0D3080;
+  --red:       #CC2020;
+  --dark:      #131722;
+  --winning:   #2A9E52;
+  --fatigue:   #D4880A;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  background-color: #131722;
+  color: #E8EAF2;
+  font-family: 'DM Sans', sans-serif;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.font-display {
+  font-family: 'Syne', sans-serif;
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #1E2230;
+}
+::-webkit-scrollbar-thumb {
+  background: #3A3F52;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #6B7291;
+}
+
+/* Pulse animation for fatigue indicators */
+@keyframes pulse-red {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.pulse-red {
+  animation: pulse-red 1.5s ease-in-out infinite;
+}
+
+/* Recharts custom styles */
+.recharts-tooltip-wrapper {
+  outline: none;
+}
+
+/* Table row hover */
+.table-row-hover:hover {
+  background-color: #1E2230;
+  cursor: pointer;
+}
