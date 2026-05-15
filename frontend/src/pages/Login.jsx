@@ -6,6 +6,7 @@ function MatrixRain() {
   const canvasRef = useRef(null);
 
   useEffect(() => {
+    document.body.style.backgroundColor = '#0A0C12';
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
 
@@ -63,6 +64,7 @@ function MatrixRain() {
     return () => {
       cancelAnimationFrame(animId);
       window.removeEventListener('resize', resize);
+      document.body.style.backgroundColor = '';
     };
   }, []);
 
@@ -96,7 +98,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-brand-black flex flex-col items-center justify-center px-4 relative overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 relative" style={{ backgroundColor: 'transparent' }}>
       <MatrixRain />
 
       {/* Content above canvas */}
