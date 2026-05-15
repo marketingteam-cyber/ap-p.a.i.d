@@ -1,6 +1,79 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+
+function MatrixRain() {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+
+    const fontSize = 14;
+    const chars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+    let cols = Math.floor(canvas.width / fontSize);
+    let drops = Array.from({ length: cols }, () => Math.random() * -100);
+
+    let animId;
+    const draw = () => {
+      // Semi-transparent black overlay to create fade trail
+      ctx.fillStyle = 'rgba(10, 12, 18, 0.15)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      cols = Math.floor(canvas.width / fontSize);
+      if (drops.length !== cols) {
+        drops = Array.from({ length: cols }, () => Math.random() * -100);
+      }
+
+      for (let i = 0; i < drops.length; i++) {
+        const char = chars[Math.floor(Math.random() * chars.length)];
+        const x = i * fontSize;
+        const y = drops[i] * fontSize;
+
+        // Lead character is bright
+        ctx.fillStyle = '#3B6ED4';
+        ctx.font = `${fontSize}px 'JetBrains Mono', monospace`;
+        ctx.fillText(char, x, y);
+
+        // Occasionally add a brighter "head" character
+        if (drops[i] > 1) {
+          ctx.fillStyle = '#E8EAF2';
+          ctx.fillText(chars[Math.floor(Math.random() * chars.length)], x, y - fontSize);
+        }
+
+        if (y > canvas.height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+        drops[i] += 0.5;
+      }
+
+      animId = requestAnimationFrame(draw);
+    };
+
+    draw();
+
+    return () => {
+      cancelAnimationFrame(animId);
+      window.removeEventListener('resize', resize);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="fixed inset-0 w-full h-full"
+      style={{ zIndex: 0 }}
+    />
+  );
+}
 
 export default function Login() {
   const [password, setPassword] = useState('');
@@ -23,11 +96,14 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-brand-dark flex flex-col items-center justify-center px-4">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen bg-brand-black flex flex-col items-center justify-center px-4 relative overflow-hidden">
+      <MatrixRain />
+
+      {/* Content above canvas */}
+      <div className="relative w-full max-w-sm" style={{ zIndex: 1 }}>
         {/* Wordmark */}
         <div className="text-center mb-10">
-          <h1 className="font-display text-4xl font-extrabold tracking-tight mb-2">
+          <h1 className="font-display text-4xl font-extrabold tracking-tight mb-2 drop-shadow-lg">
             <span className="text-brand-gray-100">P</span>
             <span className="text-brand-red">.</span>
             <span className="text-brand-gray-100">A</span>
@@ -36,10 +112,14 @@ export default function Login() {
             <span className="text-brand-red">.</span>
             <span className="text-brand-gray-100">D</span>
           </h1>
-          <p className="text-brand-gray-500 text-sm">Paid Ads Intelligence Dashboard</p>
+          <p className="text-brand-gray-400 text-sm tracking-wide">Paid Ads Intelligence Dashboard</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-brand-gray-900 rounded-card border border-brand-gray-700 p-6 flex flex-col gap-4">
+        <form
+          onSubmit={handleSubmit}
+          className="rounded-card border border-brand-gray-700 p-6 flex flex-col gap-4"
+          style={{ background: 'rgba(30, 34, 48, 0.85)', backdropFilter: 'blur(12px)' }}
+        >
           <div>
             <label className="block text-xs font-mono text-brand-gray-500 uppercase tracking-wider mb-2">
               Dashboard Password
