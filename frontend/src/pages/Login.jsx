@@ -6,81 +6,74 @@ function MatrixRain() {
   const canvasRef = useRef(null);
 
   useEffect(() => {
-    document.body.style.backgroundColor = '#0A0C12';
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    resize();
-    window.addEventListener('resize', resize);
-
     const fontSize = 14;
     const chars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
-    let cols = Math.floor(canvas.width / fontSize);
-    let drops = Array.from({ length: cols }, () => Math.random() * -100);
+    let cols, drops, animId;
 
-    let animId;
+    const init = () => {
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
+      cols  = Math.floor(canvas.width / fontSize);
+      drops = Array.from({ length: cols }, () => Math.floor(Math.random() * -50));
+    };
+
     const draw = () => {
-      // Semi-transparent black overlay to create fade trail
-      ctx.fillStyle = 'rgba(10, 12, 18, 0.15)';
+      ctx.fillStyle = 'rgba(10, 12, 18, 0.18)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.font = `${fontSize}px monospace`;
 
-      cols = Math.floor(canvas.width / fontSize);
-      if (drops.length !== cols) {
-        drops = Array.from({ length: cols }, () => Math.random() * -100);
-      }
-
-      for (let i = 0; i < drops.length; i++) {
-        const char = chars[Math.floor(Math.random() * chars.length)];
-        const x = i * fontSize;
+      for (let i = 0; i < cols; i++) {
         const y = drops[i] * fontSize;
+        const x = i * fontSize;
 
-        // Lead character is bright
-        ctx.fillStyle = '#3B6ED4';
-        ctx.font = `${fontSize}px 'JetBrains Mono', monospace`;
-        ctx.fillText(char, x, y);
+        // bright head
+        ctx.fillStyle = '#E8EAF2';
+        ctx.fillText(chars[Math.floor(Math.random() * chars.length)], x, y);
 
-        // Occasionally add a brighter "head" character
-        if (drops[i] > 1) {
-          ctx.fillStyle = '#E8EAF2';
-          ctx.fillText(chars[Math.floor(Math.random() * chars.length)], x, y - fontSize);
-        }
+        // trail character
+        ctx.fillStyle = '#1A4FBA';
+        ctx.fillText(chars[Math.floor(Math.random() * chars.length)], x, y + fontSize);
 
-        if (y > canvas.height && Math.random() > 0.975) {
-          drops[i] = 0;
-        }
-        drops[i] += 0.5;
+        if (y > canvas.height && Math.random() > 0.975) drops[i] = 0;
+        drops[i]++;
       }
 
       animId = requestAnimationFrame(draw);
     };
 
+    init();
     draw();
+    window.addEventListener('resize', init);
 
     return () => {
       cancelAnimationFrame(animId);
-      window.removeEventListener('resize', resize);
-      document.body.style.backgroundColor = '';
+      window.removeEventListener('resize', init);
     };
   }, []);
 
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 w-full h-full"
-      style={{ zIndex: 0 }}
+      style={{
+        position: 'fixed',
+        top: 0, left: 0,
+        width: '100vw',
+        height: '100vh',
+        zIndex: 0,
+        display: 'block',
+        backgroundColor: '#0A0C12',
+      }}
     />
   );
 }
 
 export default function Login() {
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [error, setError]       = useState('');
+  const [loading, setLoading]   = useState(false);
   const navigate = useNavigate();
 
   async function handleSubmit(e) {
@@ -98,63 +91,109 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 relative" style={{ backgroundColor: 'transparent' }}>
+    <>
       <MatrixRain />
 
-      {/* Content above canvas */}
-      <div className="relative w-full max-w-sm" style={{ zIndex: 1 }}>
-        {/* Wordmark */}
-        <div className="text-center mb-10">
-          <h1 className="font-display text-4xl font-extrabold tracking-tight mb-2 drop-shadow-lg">
-            <span className="text-brand-gray-100">P</span>
-            <span className="text-brand-red">.</span>
-            <span className="text-brand-gray-100">A</span>
-            <span className="text-brand-red">.</span>
-            <span className="text-brand-gray-100">I</span>
-            <span className="text-brand-red">.</span>
-            <span className="text-brand-gray-100">D</span>
-          </h1>
-          <p className="text-brand-gray-400 text-sm tracking-wide">Paid Ads Intelligence Dashboard</p>
-        </div>
+      {/* Form layer — completely independent from canvas */}
+      <div style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '1rem',
+      }}>
+        <div style={{ width: '100%', maxWidth: '360px' }}>
 
-        <form
-          onSubmit={handleSubmit}
-          className="rounded-card border border-brand-gray-700 p-6 flex flex-col gap-4"
-          style={{ background: 'rgba(30, 34, 48, 0.85)', backdropFilter: 'blur(12px)' }}
-        >
-          <div>
-            <label className="block text-xs font-mono text-brand-gray-500 uppercase tracking-wider mb-2">
-              Dashboard Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="Enter password"
-              className="w-full bg-brand-dark border border-brand-gray-700 rounded-btn px-4 py-3 text-brand-gray-100 text-sm placeholder-brand-gray-500 focus:outline-none focus:border-brand-blue transition-colors"
-              autoFocus
-            />
+          {/* Wordmark */}
+          <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+            <h1 className="font-display" style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: '0.5rem' }}>
+              <span style={{ color: '#E8EAF2' }}>P</span>
+              <span style={{ color: '#CC2020' }}>.</span>
+              <span style={{ color: '#E8EAF2' }}>A</span>
+              <span style={{ color: '#CC2020' }}>.</span>
+              <span style={{ color: '#E8EAF2' }}>I</span>
+              <span style={{ color: '#CC2020' }}>.</span>
+              <span style={{ color: '#E8EAF2' }}>D</span>
+            </h1>
+            <p style={{ color: '#6B7291', fontSize: '0.875rem', letterSpacing: '0.05em' }}>
+              Paid Ads Intelligence Dashboard
+            </p>
           </div>
 
-          {error && (
-            <p className="text-xs text-failing bg-failing/10 border border-failing/20 rounded-btn px-3 py-2">
-              {error}
-            </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading || !password}
-            className="w-full bg-brand-blue hover:bg-brand-blue-dark disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium text-sm py-3 rounded-btn transition-colors"
+          {/* Card */}
+          <form
+            onSubmit={handleSubmit}
+            style={{
+              background: 'rgba(30, 34, 48, 0.88)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              border: '1px solid #3A3F52',
+              borderRadius: '12px',
+              padding: '1.5rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1rem',
+            }}
           >
-            {loading ? 'Authenticating...' : 'Enter Dashboard'}
-          </button>
-        </form>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.7rem', fontFamily: 'monospace', color: '#6B7291', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.5rem' }}>
+                Dashboard Password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="Enter password"
+                autoFocus
+                style={{
+                  width: '100%',
+                  background: '#131722',
+                  border: '1px solid #3A3F52',
+                  borderRadius: '8px',
+                  padding: '0.75rem 1rem',
+                  color: '#E8EAF2',
+                  fontSize: '0.875rem',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
 
-        <p className="text-center text-xs text-brand-gray-500 mt-4">
-          AssetPlus · Internal Use Only
-        </p>
+            {error && (
+              <p style={{ fontSize: '0.75rem', color: '#CC2020', background: 'rgba(204,32,32,0.1)', border: '1px solid rgba(204,32,32,0.2)', borderRadius: '8px', padding: '0.5rem 0.75rem', margin: 0 }}>
+                {error}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading || !password}
+              style={{
+                width: '100%',
+                background: loading || !password ? '#1A3070' : '#1A4FBA',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '0.75rem',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                cursor: loading || !password ? 'not-allowed' : 'pointer',
+                opacity: loading || !password ? 0.5 : 1,
+                transition: 'background 0.2s',
+              }}
+            >
+              {loading ? 'Authenticating...' : 'Enter Dashboard'}
+            </button>
+          </form>
+
+          <p style={{ textAlign: 'center', fontSize: '0.7rem', color: '#6B7291', marginTop: '1rem' }}>
+            AssetPlus · Internal Use Only
+          </p>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
