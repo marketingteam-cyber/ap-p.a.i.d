@@ -16,29 +16,38 @@ function MatrixRain() {
     const init = () => {
       canvas.width  = window.innerWidth;
       canvas.height = window.innerHeight;
+      // solid dark fill on resize so no flash
+      ctx.fillStyle = '#0A0C12';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
       cols  = Math.floor(canvas.width / fontSize);
-      drops = Array.from({ length: cols }, () => Math.floor(Math.random() * -50));
+      drops = Array.from({ length: cols }, () => Math.floor(Math.random() * -80));
     };
 
     const draw = () => {
-      ctx.fillStyle = 'rgba(10, 12, 18, 0.18)';
+      // fade trail
+      ctx.fillStyle = 'rgba(10, 12, 18, 0.12)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.font = `${fontSize}px monospace`;
+      ctx.font = `bold ${fontSize}px monospace`;
 
       for (let i = 0; i < cols; i++) {
         const y = drops[i] * fontSize;
         const x = i * fontSize;
+        const char = chars[Math.floor(Math.random() * chars.length)];
 
-        // bright head
-        ctx.fillStyle = '#E8EAF2';
-        ctx.fillText(chars[Math.floor(Math.random() * chars.length)], x, y);
+        // glowing head — bright white
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillText(char, x, y);
 
-        // trail character
+        // body — bright cyan-blue
+        ctx.fillStyle = '#3B6ED4';
+        ctx.fillText(chars[Math.floor(Math.random() * chars.length)], x, y - fontSize);
+
+        // mid trail — dimmer blue
         ctx.fillStyle = '#1A4FBA';
-        ctx.fillText(chars[Math.floor(Math.random() * chars.length)], x, y + fontSize);
+        ctx.fillText(chars[Math.floor(Math.random() * chars.length)], x, y - fontSize * 2);
 
         if (y > canvas.height && Math.random() > 0.975) drops[i] = 0;
-        drops[i]++;
+        drops[i] += 0.6;
       }
 
       animId = requestAnimationFrame(draw);
@@ -64,7 +73,7 @@ function MatrixRain() {
         height: '100vh',
         zIndex: 0,
         display: 'block',
-        backgroundColor: '#0A0C12',
+        background: '#0A0C12',
       }}
     />
   );
