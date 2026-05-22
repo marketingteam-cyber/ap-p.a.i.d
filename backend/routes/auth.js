@@ -1,54 +1,46 @@
 const express = require('express');
-const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 const router = express.Router();
 
-const HASH_ROUNDS = 10;
-let passwordHash = null;
-
-async function getPasswordHash() {
-  if (!passwordHash) {
-    const pw = process.env.DASHBOARD_PASSWORD || 'changeme';
-    passwordHash = await bcrypt.hash(pw, HASH_ROUNDS);
-  }
-  return passwordHash;
+function getSecret() {
+  return process.env.SESSION_SECRET || 'dev-secret-change-me';
 }
 
-router.post('/login', async (req, res) => {
-  try {
-    const { password } = req.body;
-    if (!password) {
-      return res.status(400).json({ error: 'Password required' });
-    }
+router.post('/login', (req, res) => {
+  const { password } = req.body;
+  if (!password) return res.status(400).json({ error: 'Password required' });
 
-    const plain = process.env.DASHBOARD_PASSWORD || 'changeme';
-    const match = password === plain;
+  const expected = process.env.DASHBOARD_PASSWORD || 'changeme';
+  if (password !== expected) return res.status(401).json({ error: 'Invalid password' });
 
-    if (!match) {
-      return res.status(401).json({ error: 'Invalid password' });
-    }
+  const token = jwt.sign({ authenticated: true }, getSecret(), { expiresIn: '24h' });
 
-    req.session.authenticated = true;
-    req.session.loginTime = new Date().toISOString();
-    return res.json({ success: true });
-  } catch (err) {
-    console.error('Login error:', err);
-    return res.status(500).json({ error: 'Internal server error' });
-  }
+  res.cookie('paid_token', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 24 * 60 * 60 * 1000,
+    path: '/',
+  });
+
+  return res.json({ success: true });
 });
 
 router.post('/logout', (req, res) => {
-  req.session.destroy(err => {
-    if (err) {
-      return res.status(500).json({ error: 'Logout failed' });
-    }
-    res.clearCookie('connect.sid');
-    return res.json({ success: true });
-  });
+  res.clearCookie('paid_token', { path: '/' });
+  return res.json({ success: true });
 });
 
 router.get('/status', (req, res) => {
-  return res.json({ authenticated: !!(req.session && req.session.authenticated) });
+  const token = req.cookies?.paid_token;
+  if (!token) return res.json({ authenticated: false });
+  try {
+    jwt.verify(token, getSecret());
+    return res.json({ authenticated: true });
+  } catch {
+    return res.json({ authenticated: false });
+  }
 });
 
 module.exports = router;

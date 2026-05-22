@@ -1,8 +1,7 @@
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 
 const express = require('express');
-const session = require('express-session');
-const pgSession = require('connect-pg-simple')(session);
+const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const path = require('path');
 const db = require('./db/database');
@@ -28,31 +27,16 @@ app.use(cors({
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-app.use(session({
-  store: new pgSession({
-    pool: db,
-    tableName: 'session',
-    createTableIfMissing: true,
-  }),
-  secret: process.env.SESSION_SECRET || 'dev-secret-change-me',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000,
-  },
-}));
+app.use(cookieParser());
 
 // Auth routes (public)
 app.use('/api/auth', authRouter);
 
 // Protected API routes
-app.use('/api/overview',     requireAuth, overviewRouter);
-app.use('/api/my-ads',       requireAuth, myAdsRouter);
-app.use('/api/competitors',  requireAuth, competitorsRouter);
-app.use('/api/creatives',    requireAuth, creativesRouter);
+app.use('/api/overview',    requireAuth, overviewRouter);
+app.use('/api/my-ads',      requireAuth, myAdsRouter);
+app.use('/api/competitors', requireAuth, competitorsRouter);
+app.use('/api/creatives',   requireAuth, creativesRouter);
 app.use('/api/meta-ads',    requireAuth, metaAdsRouter);
 
 // Refresh status
