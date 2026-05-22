@@ -12,6 +12,7 @@ const overviewRouter = require('./routes/overview');
 const myAdsRouter = require('./routes/myAds');
 const competitorsRouter = require('./routes/competitors');
 const creativesRouter = require('./routes/creatives');
+const metaAdsRouter = require('./routes/metaAds');
 const { requireAuth } = require('./middleware/auth');
 const { runDailyRefresh } = require('./scheduler/dailyRefresh');
 
@@ -52,6 +53,7 @@ app.use('/api/overview',     requireAuth, overviewRouter);
 app.use('/api/my-ads',       requireAuth, myAdsRouter);
 app.use('/api/competitors',  requireAuth, competitorsRouter);
 app.use('/api/creatives',    requireAuth, creativesRouter);
+app.use('/api/meta-ads',    requireAuth, metaAdsRouter);
 
 // Refresh status
 app.get('/api/refresh/status', requireAuth, async (req, res) => {

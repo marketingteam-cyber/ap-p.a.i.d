@@ -5,6 +5,7 @@ import axios from 'axios';
 const NAV_ITEMS = [
   { to: '/overview',    label: 'Overview' },
   { to: '/my-ads',      label: 'My Ads' },
+  { to: '/meta-ads',    label: 'Meta Ads' },
   { to: '/competitors', label: 'Competitors' },
   { to: '/creatives',   label: 'Creatives' },
 ];

@@ -7,6 +7,7 @@ import Overview from './pages/Overview';
 import MyAds from './pages/MyAds';
 import Competitors from './pages/Competitors';
 import Creatives from './pages/Creatives';
+import MetaAds from './pages/MetaAds';
 
 function ProtectedRoute({ children }) {
   const [authChecked, setAuthChecked] = useState(false);
@@ -40,6 +41,7 @@ export default function App() {
         <Route path="/my-ads" element={<ProtectedRoute><MyAds /></ProtectedRoute>} />
         <Route path="/competitors" element={<ProtectedRoute><Competitors /></ProtectedRoute>} />
         <Route path="/creatives" element={<ProtectedRoute><Creatives /></ProtectedRoute>} />
+        <Route path="/meta-ads" element={<ProtectedRoute><MetaAds /></ProtectedRoute>} />
         <Route path="/" element={<Navigate to="/overview" replace />} />
         <Route path="*" element={<Navigate to="/overview" replace />} />
       </Routes>
